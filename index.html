@@ -52,39 +52,13 @@
       color: #38bdf8;
     }
 
-    .dashboard {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-
-    /* CAMERA */
-    .camera-box {
-      position: relative;
-      background: #111827;
-      padding: 10px;
-      border-radius: 12px;
-    }
-
-    video {
-      width: 600px;
-      max-width: 90vw;
-      border-radius: 10px;
-    }
-
-    canvas {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-    }
-
-    /* CARDS */
+    /* ================= CARDS ================= */
     .card {
-      width: 220px;
+      width: 240px;
       background: #111827;
       padding: 15px;
       border-radius: 12px;
-      margin-bottom: 10px;
+      margin: 10px 0;
     }
 
     .title {
@@ -102,14 +76,34 @@
       color: #fbbf24;
     }
 
-    button {
-      width: 100%;
+    /* ================= CAMERA ================= */
+    .camera-box {
+      position: relative;
+      background: #111827;
       padding: 10px;
-      background: #38bdf8;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
+      border-radius: 12px;
+      width: fit-content;
+    }
+
+    video {
+      width: 600px;
+      max-width: 90vw;
+      border-radius: 10px;
+    }
+
+    canvas {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+
+    /* ================= VIEWS ================= */
+    .view {
+      display: none;
+    }
+
+    .active {
+      display: block;
     }
   </style>
 </head>
@@ -119,10 +113,11 @@
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="logo">🧠 AI DASHBOARD</div>
+
     <div class="menu">
-      <div>📷 Live</div>
-      <div>📊 Analytics</div>
-      <div>⚙ Settings</div>
+      <div onclick="showView('live')">📷 Live</div>
+      <div onclick="showView('analytics')">📊 Analytics</div>
+      <div onclick="showView('settings')">⚙ Settings</div>
     </div>
   </div>
 
@@ -131,39 +126,54 @@
 
     <div class="header">Real-time AI Vision System</div>
 
-    <div class="dashboard">
+    <!-- LIVE VIEW -->
+    <div id="liveView" class="view active">
 
-      <!-- CAMERA -->
       <div class="camera-box">
         <video id="video" autoplay muted></video>
       </div>
 
-      <!-- PANEL -->
-      <div>
-
-        <div class="card">
-          <div class="title">System Status</div>
-          <div id="status" class="value status">Starting...</div>
-        </div>
-
-        <div class="card">
-          <div class="title">Gender</div>
-          <div id="gender" class="value">-</div>
-        </div>
-
-        <div class="card">
-          <div class="title">Age Range</div>
-          <div id="age" class="value">-</div>
-        </div>
-
-        <div class="card">
-          <button onclick="toggleDetection()" id="btn">
-            ⏯ Pause Detection
-          </button>
-        </div>
-
+      <div class="card">
+        <div class="title">System Status</div>
+        <div id="status" class="value status">Starting...</div>
       </div>
 
+      <div class="card">
+        <div class="title">Gender</div>
+        <div id="gender" class="value">-</div>
+      </div>
+
+      <div class="card">
+        <div class="title">Age Range</div>
+        <div id="age" class="value">-</div>
+      </div>
+
+      <div class="card">
+        <button onclick="toggleDetection()" id="btn">
+          ⏯ Pause Detection
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="analyticsView" class="view">
+      <div class="card">
+        <div class="title">📊 Analytics Panel</div>
+        <div class="value">Face Detection: Active</div>
+        <div class="value">Age Model: Running</div>
+        <div class="value">Gender Model: Running</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settingsView" class="view">
+      <div class="card">
+        <div class="title">⚙ Settings</div>
+        <div class="value">Camera: Enabled</div>
+        <div class="value">AI Mode: Real-time</div>
+        <div class="value">Model: face-api.js</div>
+      </div>
     </div>
 
   </div>
