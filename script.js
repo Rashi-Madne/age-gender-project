@@ -2,7 +2,7 @@ const video = document.getElementById("video");
 const result = document.getElementById("result");
 
 let canvas;
-let intervalStarted = false;
+let started = false;
 
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -17,11 +17,9 @@ async function loadModels() {
   try {
     await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
     await faceapi.nets.ageGenderNet.loadFromUri('./models');
-    await faceapi.nets.faceExpressionNet.loadFromUri('./models');
 
     console.log("Models loaded ✅");
 
-    // WAIT FOR VIDEO READY
     video.onloadedmetadata = () => {
       startDetection();
     };
@@ -36,8 +34,8 @@ loadModels();
 // ================= DETECTION =================
 function startDetection() {
 
-  if (intervalStarted) return;
-  intervalStarted = true;
+  if (started) return;
+  started = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
   document.querySelector(".wrapper").appendChild(canvas);
@@ -55,8 +53,7 @@ function startDetection() {
 
     const detections = await faceapi
       .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-      .withAgeAndGender()
-      .withFaceExpressions();
+      .withAgeAndGender();
 
     const resized = faceapi.resizeResults(detections, displaySize);
 
@@ -72,12 +69,23 @@ function startDetection() {
 
     const d = resized[0];
 
-    const emotion = Object.keys(d.expressions).reduce((a, b) =>
-      d.expressions[a] > d.expressions[b] ? a : b
-    );
-
     result.innerText =
-      `Gender: ${d.gender} | Age: ${Math.round(d.age)} | ${emotion}`;
+      `Gender: ${d.gender} | Age: ${Math.round(d.age)}`;
 
   }, 200);
+}
+
+// ================= SNAPSHOT =================
+function takeSnapshot() {
+  const snap = document.createElement("canvas");
+  snap.width = video.videoWidth;
+  snap.height = video.videoHeight;
+
+  const ctx = snap.getContext("2d");
+  ctx.drawImage(video, 0, 0);
+
+  const link = document.createElement("a");
+  link.download = "face.png";
+  link.href = snap.toDataURL("image/png");
+  link.click();
 }
