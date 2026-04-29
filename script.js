@@ -1,15 +1,17 @@
 const video = document.getElementById("video");
-
 const genderBox = document.getElementById("gender");
 const ageBox = document.getElementById("age");
 const statusBox = document.getElementById("status");
 
 let canvas;
 let started = false;
+let running = true;
 
-// stability buffers
+// ================= STABILITY =================
 let ageBuffer = [];
 let genderBuffer = [];
+let noFaceCount = 0;
+let lastStableAge = null;
 
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -22,7 +24,7 @@ async function loadModels() {
   await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
   await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-  statusBox.innerText = "Models Loaded ✅";
+  statusBox.innerText = "AI Ready ✅";
 
   video.onloadedmetadata = () => {
     startDetection();
@@ -30,6 +32,17 @@ async function loadModels() {
 }
 
 loadModels();
+
+// ================= TOGGLE =================
+function toggleDetection() {
+  running = !running;
+
+  document.getElementById("btn").innerText =
+    running ? "⏸ Pause Detection" : "▶ Start Detection";
+
+  statusBox.innerText =
+    running ? "Running 🚀" : "Paused ⏸";
+}
 
 // ================= DETECTION =================
 function startDetection() {
@@ -47,9 +60,9 @@ function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  statusBox.innerText = "Running 🚀";
-
   setInterval(async () => {
+
+    if (!running) return;
 
     const detections = await faceapi
       .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
@@ -60,27 +73,40 @@ function startDetection() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // ================= NO FACE =================
     if (!resized.length) {
-      statusBox.innerText = "No face detected";
+      noFaceCount++;
+
+      if (noFaceCount > 5) {
+        statusBox.innerText = "Searching face... 🔍";
+      }
+
       return;
     }
 
+    noFaceCount = 0;
+
     const d = resized[0];
 
-    // ================= AGE SMOOTHING =================
+    // ================= AGE SMOOTH =================
     ageBuffer.push(d.age);
-    if (ageBuffer.length > 12) ageBuffer.shift();
+    if (ageBuffer.length > 25) ageBuffer.shift();
 
     const avgAge =
       ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
 
-    // 👉 AGE RANGE LOGIC (IMPORTANT PART)
-    const minAge = Math.max(0, Math.round(avgAge - 2));
-    const maxAge = Math.round(avgAge + 2);
+    if (!lastStableAge) lastStableAge = avgAge;
 
-    // ================= GENDER STABILITY =================
+    if (Math.abs(avgAge - lastStableAge) > 1.5) {
+      lastStableAge = avgAge;
+    }
+
+    const minAge = Math.round(lastStableAge - 2);
+    const maxAge = Math.round(lastStableAge + 2);
+
+    // ================= GENDER =================
     genderBuffer.push(d.gender);
-    if (genderBuffer.length > 6) genderBuffer.shift();
+    if (genderBuffer.length > 10) genderBuffer.shift();
 
     const stableGender = mode(genderBuffer);
 
@@ -88,11 +114,11 @@ function startDetection() {
     genderBox.innerText = stableGender;
     ageBox.innerText = `${minAge} - ${maxAge}`;
 
-    statusBox.innerText = "Tracking 🎯";
+    statusBox.innerText = "LIVE 🟢 Face Detected";
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 400);
+  }, 200);
 }
 
 // ================= MODE =================
