@@ -6,12 +6,11 @@ const statusBox = document.getElementById("status");
 let canvas;
 let started = false;
 
-// ================= STABILITY BUFFERS =================
+// ================= STABILITY STORAGE =================
 let ageBuffer = [];
 let genderBuffer = [];
-
-let lastStableAge = null;
 let noFaceCount = 0;
+let lastStableAge = null;
 
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -41,7 +40,7 @@ async function loadModels() {
 
 loadModels();
 
-// ================= START DETECTION =================
+// ================= START =================
 function startDetection() {
 
   if (started) return;
@@ -70,7 +69,7 @@ function startDetection() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ================= FACE FOUND =================
+    // ================= FACE DETECTED =================
     if (resized.length > 0) {
 
       noFaceCount = 0;
@@ -111,14 +110,16 @@ function startDetection() {
 
       faceapi.draw.drawDetections(canvas, resized);
 
-      return;
     }
 
-    // ================= NO FACE HANDLING =================
-    noFaceCount++;
+    // ================= NO FACE =================
+    else {
 
-    if (noFaceCount > 5) {
-      statusBox.innerText = "No face detected ❌";
+      noFaceCount++;
+
+      if (noFaceCount > 5) {
+        statusBox.innerText = "No face detected ❌";
+      }
     }
 
   }, 200);
