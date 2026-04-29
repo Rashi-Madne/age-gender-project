@@ -4,65 +4,32 @@ const ageBox = document.getElementById("age");
 const statusBox = document.getElementById("status");
 
 let canvas;
-let started = false;
 let running = true;
+let started = false;
 
-// ================= STATE =================
+// ================= STABILITY =================
 let ageBuffer = [];
 let genderBuffer = [];
 let noFaceCount = 0;
 let lastStableAge = null;
 
-// ================= CAMERA =================
+// ================= 1. START CAMERA IMMEDIATELY =================
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
+    statusBox.innerText = "Camera Ready 📷";
   });
 
-// ================= LOAD MODELS =================
-async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
+// ================= 2. LOAD MODELS IN BACKGROUND =================
+Promise.all([
+  faceapi.nets.tinyFaceDetector.loadFromUri('./models'),
+  faceapi.nets.ageGenderNet.loadFromUri('./models')
+]).then(() => {
+  statusBox.innerText = "AI Loaded ⚡ Starting...";
 
-  statusBox.innerText = "AI Ready ✅";
-
-  video.onloadedmetadata = () => {
-    startDetection();
-  };
-}
-
-loadModels();
-
-// ================= VIEW SWITCH =================
-function showView(view) {
-
-  document.getElementById("liveView").classList.remove("active");
-  document.getElementById("analyticsView").classList.remove("active");
-  document.getElementById("settingsView").classList.remove("active");
-
-  if (view === "live") {
-    document.getElementById("liveView").classList.add("active");
-  }
-
-  if (view === "analytics") {
-    document.getElementById("analyticsView").classList.add("active");
-  }
-
-  if (view === "settings") {
-    document.getElementById("settingsView").classList.add("active");
-  }
-}
-
-// ================= TOGGLE =================
-function toggleDetection() {
-  running = !running;
-
-  document.getElementById("btn").innerText =
-    running ? "⏸ Pause Detection" : "▶ Start Detection";
-
-  statusBox.innerText =
-    running ? "Running 🚀" : "Paused ⏸";
-}
+  // start detection immediately after models load
+  startDetection();
+});
 
 // ================= DETECTION =================
 function startDetection() {
@@ -80,9 +47,15 @@ function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  setInterval(async () => {
+  // 🔥 NO DELAY START (runs immediately)
+  requestAnimationFrame(detectLoop);
 
-    if (!running) return;
+  async function detectLoop() {
+
+    if (!running) {
+      requestAnimationFrame(detectLoop);
+      return;
+    }
 
     const detections = await faceapi
       .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
@@ -97,10 +70,11 @@ function startDetection() {
     if (!resized.length) {
       noFaceCount++;
 
-      if (noFaceCount > 5) {
+      if (noFaceCount > 3) {
         statusBox.innerText = "Searching face... 🔍";
       }
 
+      requestAnimationFrame(detectLoop);
       return;
     }
 
@@ -108,16 +82,16 @@ function startDetection() {
 
     const d = resized[0];
 
-    // ================= AGE =================
+    // ================= AGE SMOOTH =================
     ageBuffer.push(d.age);
-    if (ageBuffer.length > 25) ageBuffer.shift();
+    if (ageBuffer.length > 20) ageBuffer.shift();
 
     const avgAge =
       ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
 
     if (!lastStableAge) lastStableAge = avgAge;
 
-    if (Math.abs(avgAge - lastStableAge) > 1.5) {
+    if (Math.abs(avgAge - lastStableAge) > 1.2) {
       lastStableAge = avgAge;
     }
 
@@ -126,7 +100,7 @@ function startDetection() {
 
     // ================= GENDER =================
     genderBuffer.push(d.gender);
-    if (genderBuffer.length > 10) genderBuffer.shift();
+    if (genderBuffer.length > 8) genderBuffer.shift();
 
     const stableGender = mode(genderBuffer);
 
@@ -134,11 +108,12 @@ function startDetection() {
     genderBox.innerText = stableGender;
     ageBox.innerText = `${minAge} - ${maxAge}`;
 
-    statusBox.innerText = "LIVE 🟢 Face Detected";
+    statusBox.innerText = "LIVE 🟢 Detecting";
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 200);
+    requestAnimationFrame(detectLoop);
+  }
 }
 
 // ================= MODE =================
