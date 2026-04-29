@@ -4,7 +4,6 @@ const result = document.getElementById("result");
 let canvas;
 let started = false;
 
-// ====== STABILITY BUFFERS ======
 let ageBuffer = [];
 let genderBuffer = [];
 
@@ -12,26 +11,41 @@ let genderBuffer = [];
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
-    console.log("Camera started ✅");
   })
   .catch(err => console.error(err));
 
 // ================= LOAD MODELS =================
 async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-  console.log("Models loaded ✅");
+    console.log("Models loaded ✅");
 
-  video.onloadedmetadata = () => {
-    startDetection();
-  };
+    startDetection(); // IMPORTANT: start directly after models
+
+  } catch (err) {
+    console.error("Model error ❌", err);
+  }
 }
 
 loadModels();
 
-// ================= DETECTION =================
+// ================= START =================
 function startDetection() {
+
+  const waitVideo = setInterval(() => {
+
+    if (video.readyState >= 2) { // video is ready
+      clearInterval(waitVideo);
+      runDetection();
+    }
+
+  }, 200);
+}
+
+// ================= RUN DETECTION =================
+function runDetection() {
 
   if (started) return;
   started = true;
@@ -66,32 +80,28 @@ function startDetection() {
 
     const d = resized[0];
 
-    // ================= AGE SMOOTHING =================
+    // smooth age
     ageBuffer.push(d.age);
-    if (ageBuffer.length > 8) ageBuffer.shift();
+    if (ageBuffer.length > 10) ageBuffer.shift();
+    const avgAge = ageBuffer.reduce((a,b)=>a+b,0)/ageBuffer.length;
 
-    const smoothAge =
-      ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
-
-    // ================= GENDER STABILITY =================
+    // stable gender
     genderBuffer.push(d.gender);
     if (genderBuffer.length > 5) genderBuffer.shift();
-
     const stableGender = mode(genderBuffer);
 
-    // ================= OUTPUT =================
     result.innerText =
-      `Gender: ${stableGender} | Age: ${Math.round(smoothAge)}`;
+      `Gender: ${stableGender} | Age: ${Math.round(avgAge)}`;
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 400); // slower = more stable
+  }, 300);
 }
 
-// ================= MODE FUNCTION =================
+// ================= MODE =================
 function mode(arr) {
-  return arr.sort((a, b) =>
-    arr.filter(v => v === a).length -
-    arr.filter(v => v === b).length
+  return arr.sort((a,b)=>
+    arr.filter(v=>v===a).length -
+    arr.filter(v=>v===b).length
   ).pop();
 }
