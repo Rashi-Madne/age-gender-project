@@ -4,59 +4,71 @@ const ageBox = document.getElementById("age");
 const statusBox = document.getElementById("status");
 
 let canvas;
-let running = true;
-let started = false;
+let isRunning = true;
+let isStarted = false;
+let modelsLoaded = false;
+let videoLoaded = false;
 
-// STABILITY
+// ================= STABILITY BUFFERS =================
 let ageBuffer = [];
 let genderBuffer = [];
-let noFaceCount = 0;
 let lastStableAge = null;
+let noFaceCounter = 0;
 
-// ================= SIDEBAR FIX =================
-window.showView = function(view) {
-
-  document.getElementById("liveView").classList.remove("active");
-  document.getElementById("analyticsView").classList.remove("active");
-  document.getElementById("settingsView").classList.remove("active");
-
-  document.getElementById(view + "View").classList.add("active");
-};
-
-// ================= TOGGLE =================
-window.toggleDetection = function() {
-  running = !running;
-  document.getElementById("btn").innerText =
-    running ? "⏸ Pause" : "▶ Start";
-
-  statusBox.innerText = running ? "Running 🚀" : "Paused ⏸";
-};
+// ================= DEBUG =================
+console.log("JS Loaded ✅");
 
 // ================= CAMERA =================
-navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => {
+async function initCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
-  });
+
+    video.onloadedmetadata = () => {
+      videoLoaded = true;
+      console.log("Video Ready ✅");
+      statusBox.innerText = "Camera Ready 📷";
+      tryStart();
+    };
+
+  } catch (err) {
+    console.error("Camera Error ❌", err);
+    statusBox.innerText = "Camera Error ❌";
+  }
+}
 
 // ================= MODELS =================
 async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  try {
+    console.log("Loading Models...");
 
-  statusBox.innerText = "AI Ready ⚡";
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-  video.onloadedmetadata = () => {
-    startDetection();
-  };
+    modelsLoaded = true;
+
+    console.log("Models Loaded ✅");
+    statusBox.innerText = "AI Loaded ⚡";
+
+    tryStart();
+
+  } catch (err) {
+    console.error("Model Load Failed ❌", err);
+    statusBox.innerText = "Model Error ❌";
+  }
 }
 
-loadModels();
+// ================= START ONLY WHEN READY =================
+function tryStart() {
+  if (modelsLoaded && videoLoaded && !isStarted) {
+    startDetection();
+  }
+}
 
-// ================= DETECTION =================
+// ================= DETECTION INIT =================
 function startDetection() {
 
-  if (started) return;
-  started = true;
+  isStarted = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
   document.querySelector(".camera-box").appendChild(canvas);
@@ -68,72 +80,121 @@ function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  loop();
+  console.log("Detection Started 🚀");
+  statusBox.innerText = "LIVE 🟢 Starting...";
 
-  async function loop() {
+  detectLoop();
+}
 
-    if (!running) {
-      requestAnimationFrame(loop);
-      return;
-    }
+// ================= MAIN LOOP =================
+async function detectLoop() {
+
+  if (!isRunning) {
+    requestAnimationFrame(detectLoop);
+    return;
+  }
+
+  try {
 
     const detections = await faceapi
       .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
       .withAgeAndGender();
 
-    const resized = faceapi.resizeResults(detections, displaySize);
+    const resized = faceapi.resizeResults(detections, {
+      width: video.videoWidth,
+      height: video.videoHeight
+    });
 
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // NO FACE
+    // ================= NO FACE =================
     if (!resized.length) {
-      noFaceCount++;
-      if (noFaceCount > 5) statusBox.innerText = "Searching 🔍";
-      requestAnimationFrame(loop);
+      noFaceCounter++;
+
+      if (noFaceCounter > 5) {
+        statusBox.innerText = "Searching face... 🔍";
+      }
+
+      requestAnimationFrame(detectLoop);
       return;
     }
 
-    noFaceCount = 0;
+    noFaceCounter = 0;
 
-    const d = resized[0];
+    const result = resized[0];
 
-    // AGE STABILITY
-    ageBuffer.push(d.age);
+    // ================= AGE SMOOTHING =================
+    ageBuffer.push(result.age);
     if (ageBuffer.length > 20) ageBuffer.shift();
 
-    const avg = ageBuffer.reduce((a,b)=>a+b,0)/ageBuffer.length;
+    const avgAge = ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
 
-    if (!lastStableAge) lastStableAge = avg;
+    if (!lastStableAge) lastStableAge = avgAge;
 
-    if (Math.abs(avg - lastStableAge) > 1.5) {
-      lastStableAge = avg;
+    if (Math.abs(avgAge - lastStableAge) > 1.5) {
+      lastStableAge = avgAge;
     }
 
-    const min = Math.round(lastStableAge - 2);
-    const max = Math.round(lastStableAge + 2);
+    const minAge = Math.round(lastStableAge - 2);
+    const maxAge = Math.round(lastStableAge + 2);
 
-    // GENDER STABILITY
-    genderBuffer.push(d.gender);
-    if (genderBuffer.length > 8) genderBuffer.shift();
+    // ================= GENDER STABILITY =================
+    genderBuffer.push(result.gender);
+    if (genderBuffer.length > 10) genderBuffer.shift();
 
-    const gender = mode(genderBuffer);
+    const gender = getMode(genderBuffer);
 
-    // UI
+    // ================= UI UPDATE =================
     genderBox.innerText = gender;
-    ageBox.innerText = `${min} - ${max}`;
-    statusBox.innerText = "LIVE 🟢";
+    ageBox.innerText = `${minAge} - ${maxAge}`;
+    statusBox.innerText = "LIVE 🟢 Detecting";
 
+    // DRAW BOX
     faceapi.draw.drawDetections(canvas, resized);
 
-    requestAnimationFrame(loop);
+  } catch (err) {
+    console.error("Detection Error ❌", err);
+    statusBox.innerText = "Error ❌";
   }
+
+  requestAnimationFrame(detectLoop);
 }
 
-// ================= MODE =================
-function mode(arr) {
-  return arr.sort((a,b)=>
-    arr.filter(v=>v===a).length -
-    arr.filter(v=>v===b).length
-  ).pop();
+// ================= MODE FUNCTION =================
+function getMode(arr) {
+  return arr
+    .sort((a, b) =>
+      arr.filter(v => v === a).length -
+      arr.filter(v => v === b).length
+    )
+    .pop();
 }
+
+// ================= SIDEBAR CONTROL =================
+window.showView = function(view) {
+
+  document.getElementById("liveView").classList.remove("active");
+  document.getElementById("analyticsView").classList.remove("active");
+  document.getElementById("settingsView").classList.remove("active");
+
+  document.getElementById(view + "View").classList.add("active");
+
+  if (view === "live") {
+    statusBox.innerText = "LIVE 🟢";
+  }
+};
+
+// ================= TOGGLE =================
+window.toggleDetection = function() {
+  isRunning = !isRunning;
+
+  document.getElementById("btn").innerText =
+    isRunning ? "⏸ Pause" : "▶ Start";
+
+  statusBox.innerText = isRunning ? "Running 🚀" : "Paused ⏸";
+};
+
+// ================= START EVERYTHING =================
+initCamera();
+loadModels();
