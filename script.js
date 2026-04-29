@@ -1,32 +1,32 @@
 const video = document.getElementById("video");
-
-const genderBox = document.getElementById("gender");
-const ageBox = document.getElementById("age");
-const statusBox = document.getElementById("status");
+const result = document.getElementById("result");
 
 let canvas;
 let started = false;
-
-// smoothing buffers
-let ageBuffer = [];
-let genderHistory = [];
 
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
-  });
+    console.log("Camera started ✅");
+  })
+  .catch(err => console.error("Camera error:", err));
 
 // ================= LOAD MODELS =================
 async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-  statusBox.innerText = "Models Loaded ✅";
+    console.log("Models loaded ✅");
 
-  video.onloadedmetadata = () => {
-    startDetection();
-  };
+    video.onloadedmetadata = () => {
+      startDetection();
+    };
+
+  } catch (err) {
+    console.error("Model loading error ❌", err);
+  }
 }
 
 loadModels();
@@ -38,7 +38,7 @@ function startDetection() {
   started = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
-  document.querySelector(".camera-card").appendChild(canvas);
+  document.querySelector(".wrapper").appendChild(canvas);
 
   const displaySize = {
     width: video.videoWidth,
@@ -47,7 +47,7 @@ function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  statusBox.innerText = "Running 🚀";
+  console.log("Detection started 🚀");
 
   setInterval(async () => {
 
@@ -60,55 +60,20 @@ function startDetection() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // DEBUG
+    console.log("detections:", resized);
+
     if (!resized.length) {
-      statusBox.innerText = "No face detected";
+      result.innerText = "No face detected ❌";
       return;
     }
 
     const d = resized[0];
 
-    // ---------------- SMOOTH AGE ----------------
-    ageBuffer.push(d.age);
-    if (ageBuffer.length > 10) ageBuffer.shift();
-
-    const avgAge =
-      ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
-
-    // ---------------- SMOOTH GENDER ----------------
-    genderHistory.push(d.gender);
-    if (genderHistory.length > 5) genderHistory.shift();
-
-    const gender = mode(genderHistory);
-
-    // ---------------- UI UPDATE ----------------
-    ageBox.innerText = Math.round(avgAge);
-    genderBox.innerText = gender;
-
-    statusBox.innerText = "Tracking 🎯";
+    result.innerText =
+      `Gender: ${d.gender} | Age: ${Math.round(d.age)}`;
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 200);
-}
-
-// ================= HELPER =================
-function mode(arr) {
-  return arr.sort((a,b) =>
-    arr.filter(v => v===a).length - arr.filter(v => v===b).length
-  ).pop();
-}
-
-// ================= SNAPSHOT =================
-function takeSnapshot() {
-  const snap = document.createElement("canvas");
-  snap.width = video.videoWidth;
-  snap.height = video.videoHeight;
-
-  const ctx = snap.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-
-  const link = document.createElement("a");
-  link.download = "ai-dashboard.png";
-  link.href = snap.toDataURL("image/png");
-  link.click();
+  }, 300);
 }
