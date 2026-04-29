@@ -2,31 +2,42 @@ const video = document.getElementById("video");
 const result = document.getElementById("result");
 
 let canvas;
+let intervalStarted = false;
 
-// CAMERA
+// ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
+    console.log("Camera started ✅");
   })
   .catch(err => console.error("Camera error:", err));
 
-// LOAD MODELS
+// ================= LOAD MODELS =================
 async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
-  await faceapi.nets.faceExpressionNet.loadFromUri('./models');
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.ageGenderNet.loadFromUri('./models');
+    await faceapi.nets.faceExpressionNet.loadFromUri('./models');
 
-  console.log("Models loaded ✅");
+    console.log("Models loaded ✅");
 
-  video.addEventListener("loadeddata", startDetection);
+    // WAIT FOR VIDEO READY
+    video.onloadedmetadata = () => {
+      startDetection();
+    };
+
+  } catch (err) {
+    console.error("Model loading error ❌", err);
+  }
 }
 
 loadModels();
 
-// DETECTION
+// ================= DETECTION =================
 function startDetection() {
 
-  if (canvas) canvas.remove();
+  if (intervalStarted) return;
+  intervalStarted = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
   document.querySelector(".wrapper").appendChild(canvas);
@@ -37,6 +48,8 @@ function startDetection() {
   };
 
   faceapi.matchDimensions(canvas, displaySize);
+
+  console.log("Detection started 🚀");
 
   setInterval(async () => {
 
