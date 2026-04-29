@@ -4,29 +4,28 @@ const result = document.getElementById("result");
 let canvas;
 let started = false;
 
+// ====== STABILITY BUFFERS ======
+let ageBuffer = [];
+let genderBuffer = [];
+
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
     console.log("Camera started ✅");
   })
-  .catch(err => console.error("Camera error:", err));
+  .catch(err => console.error(err));
 
 // ================= LOAD MODELS =================
 async function loadModels() {
-  try {
-    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-    await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+  await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-    console.log("Models loaded ✅");
+  console.log("Models loaded ✅");
 
-    video.onloadedmetadata = () => {
-      startDetection();
-    };
-
-  } catch (err) {
-    console.error("Model loading error ❌", err);
-  }
+  video.onloadedmetadata = () => {
+    startDetection();
+  };
 }
 
 loadModels();
@@ -60,9 +59,6 @@ function startDetection() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // DEBUG
-    console.log("detections:", resized);
-
     if (!resized.length) {
       result.innerText = "No face detected ❌";
       return;
@@ -70,10 +66,32 @@ function startDetection() {
 
     const d = resized[0];
 
+    // ================= AGE SMOOTHING =================
+    ageBuffer.push(d.age);
+    if (ageBuffer.length > 8) ageBuffer.shift();
+
+    const smoothAge =
+      ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
+
+    // ================= GENDER STABILITY =================
+    genderBuffer.push(d.gender);
+    if (genderBuffer.length > 5) genderBuffer.shift();
+
+    const stableGender = mode(genderBuffer);
+
+    // ================= OUTPUT =================
     result.innerText =
-      `Gender: ${d.gender} | Age: ${Math.round(d.age)}`;
+      `Gender: ${stableGender} | Age: ${Math.round(smoothAge)}`;
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 300);
+  }, 400); // slower = more stable
+}
+
+// ================= MODE FUNCTION =================
+function mode(arr) {
+  return arr.sort((a, b) =>
+    arr.filter(v => v === a).length -
+    arr.filter(v => v === b).length
+  ).pop();
 }
