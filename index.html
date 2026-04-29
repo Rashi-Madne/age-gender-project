@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Face Dashboard</title>
+  <title>AI Face Detection</title>
 
   <script defer src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script defer src="script.js"></script>
@@ -10,107 +10,51 @@
     body {
       margin: 0;
       font-family: Arial;
-      background: #0a0f1c;
+      background: #0b1220;
       color: white;
-    }
-
-    .header {
       text-align: center;
-      padding: 15px;
+    }
+
+    h2 {
+      margin-top: 20px;
       color: #38bdf8;
-      font-size: 22px;
     }
 
-    .dashboard {
-      display: flex;
-      gap: 20px;
-      padding: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .camera-card {
+    .wrapper {
       position: relative;
-      background: #111827;
-      padding: 10px;
-      border-radius: 16px;
+      display: inline-block;
+      margin-top: 20px;
     }
 
     video {
-      width: 600px;
-      max-width: 90vw;
+      width: 720px;
+      max-width: 95vw;
       border-radius: 12px;
     }
 
     canvas {
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 0;
+      left: 0;
     }
 
-    .panel {
-      width: 250px;
-      background: #111827;
-      padding: 20px;
-      border-radius: 16px;
-    }
-
-    .box {
-      margin-bottom: 15px;
-      padding: 10px;
-      background: rgba(56,189,248,0.1);
-      border-radius: 10px;
-    }
-
-    .value {
+    #result {
+      margin-top: 15px;
       font-size: 20px;
       color: #22c55e;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #38bdf8;
-      border: none;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="header">🧠 AI Face Detection Dashboard</div>
+  <h2>🧠 AI Face Detection (Age + Gender)</h2>
 
-  <div class="dashboard">
-
-    <div class="camera-card">
-      <video id="video" autoplay muted></video>
-    </div>
-
-    <div class="panel">
-
-      <div class="box">
-        Gender<br>
-        <div id="gender" class="value">-</div>
-      </div>
-
-      <div class="box">
-        Age<br>
-        <div id="age" class="value">-</div>
-      </div>
-
-      <div class="box">
-        Status<br>
-        <div id="status" class="value">Starting...</div>
-      </div>
-
-      <button onclick="takeSnapshot()">📸 Snapshot</button>
-
-    </div>
-
+  <div class="wrapper">
+    <video id="video" autoplay muted></video>
   </div>
+
+  <div id="result">Starting...</div>
 
 </body>
 </html>
