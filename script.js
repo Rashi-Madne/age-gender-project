@@ -1,10 +1,13 @@
 const video = document.getElementById("video");
-const result = document.getElementById("result");
+
+const genderBox = document.getElementById("gender");
+const ageBox = document.getElementById("age");
+const statusBox = document.getElementById("status");
 
 let canvas;
 let started = false;
 
-// ====== STABILITY BUFFERS ======
+// stability buffers
 let ageBuffer = [];
 let genderBuffer = [];
 
@@ -12,46 +15,30 @@ let genderBuffer = [];
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
-    console.log("Camera started ✅");
-  })
-  .catch(err => console.error("Camera error:", err));
+  });
 
 // ================= LOAD MODELS =================
 async function loadModels() {
-  try {
-    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-    await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+  await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-    console.log("Models loaded ✅");
+  statusBox.innerText = "Models Loaded ✅";
 
+  video.onloadedmetadata = () => {
     startDetection();
-
-  } catch (err) {
-    console.error("Model loading error ❌", err);
-  }
+  };
 }
 
 loadModels();
 
-// ================= START DETECTION =================
+// ================= DETECTION =================
 function startDetection() {
-
-  const wait = setInterval(() => {
-    if (video.readyState >= 2) {
-      clearInterval(wait);
-      runDetection();
-    }
-  }, 200);
-}
-
-// ================= RUN DETECTION =================
-function runDetection() {
 
   if (started) return;
   started = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
-  document.querySelector(".wrapper").appendChild(canvas);
+  document.querySelector(".camera").appendChild(canvas);
 
   const displaySize = {
     width: video.videoWidth,
@@ -60,7 +47,7 @@ function runDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  console.log("Detection started 🚀");
+  statusBox.innerText = "Running 🚀";
 
   setInterval(async () => {
 
@@ -74,49 +61,44 @@ function runDetection() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!resized.length) {
-      result.innerText = "No face detected ❌";
+      statusBox.innerText = "No face detected";
       return;
     }
 
     const d = resized[0];
 
     // ================= AGE SMOOTHING =================
-    let rawAge = d.age;
+    ageBuffer.push(d.age);
+    if (ageBuffer.length > 12) ageBuffer.shift();
 
-    if (ageBuffer.length > 0) {
-      const last = ageBuffer[ageBuffer.length - 1];
-
-      // ignore sudden jumps (noise filter)
-      if (Math.abs(rawAge - last) > 5) {
-        rawAge = last;
-      }
-    }
-
-    ageBuffer.push(rawAge);
-    if (ageBuffer.length > 15) ageBuffer.shift();
-
-    const smoothAge =
+    const avgAge =
       ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
+
+    // 👉 AGE RANGE LOGIC (IMPORTANT PART)
+    const minAge = Math.max(0, Math.round(avgAge - 2));
+    const maxAge = Math.round(avgAge + 2);
 
     // ================= GENDER STABILITY =================
     genderBuffer.push(d.gender);
-    if (genderBuffer.length > 7) genderBuffer.shift();
+    if (genderBuffer.length > 6) genderBuffer.shift();
 
     const stableGender = mode(genderBuffer);
 
-    // ================= UI OUTPUT =================
-    result.innerText =
-      `Gender: ${stableGender} | Age: ${Math.round(smoothAge)}`;
+    // ================= UI =================
+    genderBox.innerText = stableGender;
+    ageBox.innerText = `${minAge} - ${maxAge}`;
+
+    statusBox.innerText = "Tracking 🎯";
 
     faceapi.draw.drawDetections(canvas, resized);
 
-  }, 500); // slower loop = more stable
+  }, 400);
 }
 
-// ================= MODE FUNCTION =================
+// ================= MODE =================
 function mode(arr) {
-  return arr.sort((a, b) =>
-    arr.filter(v => v === a).length -
-    arr.filter(v => v === b).length
+  return arr.sort((a,b)=>
+    arr.filter(v=>v===a).length -
+    arr.filter(v=>v===b).length
   ).pop();
 }
