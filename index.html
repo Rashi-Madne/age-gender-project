@@ -21,7 +21,6 @@
       background: #0f172a;
       height: 100vh;
       padding: 20px;
-      box-sizing: border-box;
     }
 
     .logo {
@@ -31,14 +30,9 @@
       margin-bottom: 30px;
     }
 
-    .menu {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      color: #94a3b8;
-    }
-
     .menu div {
+      margin: 12px 0;
+      color: #94a3b8;
       cursor: pointer;
     }
 
@@ -46,7 +40,7 @@
       color: white;
     }
 
-    /* ================= MAIN AREA ================= */
+    /* ================= MAIN ================= */
     .main {
       flex: 1;
       padding: 20px;
@@ -64,12 +58,12 @@
       flex-wrap: wrap;
     }
 
-    /* ================= CAMERA ================= */
+    /* CAMERA */
     .camera-box {
       position: relative;
       background: #111827;
       padding: 10px;
-      border-radius: 14px;
+      border-radius: 12px;
     }
 
     video {
@@ -84,27 +78,38 @@
       left: 10px;
     }
 
-    /* ================= CARDS ================= */
+    /* CARDS */
     .card {
       width: 220px;
       background: #111827;
       padding: 15px;
       border-radius: 12px;
+      margin-bottom: 10px;
     }
 
     .title {
-      font-size: 14px;
+      font-size: 13px;
       color: #94a3b8;
     }
 
     .value {
-      font-size: 22px;
-      margin-top: 8px;
+      font-size: 20px;
+      margin-top: 6px;
       color: #22c55e;
     }
 
     .status {
       color: #fbbf24;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #38bdf8;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -114,19 +119,17 @@
   <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="logo">🧠 AI DASHBOARD</div>
-
     <div class="menu">
-      <div>📷 Live Camera</div>
+      <div>📷 Live</div>
       <div>📊 Analytics</div>
       <div>⚙ Settings</div>
-      <div>📁 Reports</div>
     </div>
   </div>
 
   <!-- MAIN -->
   <div class="main">
 
-    <div class="header">Real-time Face Intelligence</div>
+    <div class="header">Real-time AI Vision System</div>
 
     <div class="dashboard">
 
@@ -135,20 +138,30 @@
         <video id="video" autoplay muted></video>
       </div>
 
-      <!-- CARDS -->
-      <div class="card">
-        <div class="title">Gender</div>
-        <div id="gender" class="value">-</div>
-      </div>
+      <!-- PANEL -->
+      <div>
 
-      <div class="card">
-        <div class="title">Age Range</div>
-        <div id="age" class="value">-</div>
-      </div>
+        <div class="card">
+          <div class="title">System Status</div>
+          <div id="status" class="value status">Starting...</div>
+        </div>
 
-      <div class="card">
-        <div class="title">Status</div>
-        <div id="status" class="value status">Starting...</div>
+        <div class="card">
+          <div class="title">Gender</div>
+          <div id="gender" class="value">-</div>
+        </div>
+
+        <div class="card">
+          <div class="title">Age Range</div>
+          <div id="age" class="value">-</div>
+        </div>
+
+        <div class="card">
+          <button onclick="toggleDetection()" id="btn">
+            ⏯ Pause Detection
+          </button>
+        </div>
+
       </div>
 
     </div>
