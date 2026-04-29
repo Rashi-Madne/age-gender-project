@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Face Detection</title>
+  <title>AI Vision Dashboard</title>
 
   <script defer src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script defer src="script.js"></script>
@@ -10,51 +10,101 @@
     body {
       margin: 0;
       font-family: Arial;
-      background: #0b1220;
+      background: #0a0f1c;
       color: white;
+    }
+
+    .header {
       text-align: center;
-    }
-
-    h2 {
-      margin-top: 20px;
+      padding: 16px;
+      font-size: 22px;
       color: #38bdf8;
+      font-weight: bold;
     }
 
-    .wrapper {
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+      flex-wrap: wrap;
+    }
+
+    .camera {
       position: relative;
-      display: inline-block;
-      margin-top: 20px;
+      background: #111827;
+      padding: 10px;
+      border-radius: 16px;
     }
 
     video {
-      width: 720px;
-      max-width: 95vw;
+      width: 650px;
+      max-width: 90vw;
       border-radius: 12px;
     }
 
     canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 10px;
+      left: 10px;
     }
 
-    #result {
-      margin-top: 15px;
+    .panel {
+      width: 260px;
+      background: #111827;
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .card {
+      margin-bottom: 15px;
+      padding: 12px;
+      background: rgba(56,189,248,0.1);
+      border-radius: 10px;
+    }
+
+    .value {
       font-size: 20px;
       color: #22c55e;
+      margin-top: 5px;
+    }
+
+    .status {
+      color: #fbbf24;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>🧠 AI Face Detection (Age + Gender)</h2>
+  <div class="header">🧠 AI Vision Dashboard</div>
 
-  <div class="wrapper">
-    <video id="video" autoplay muted></video>
+  <div class="container">
+
+    <div class="camera">
+      <video id="video" autoplay muted></video>
+    </div>
+
+    <div class="panel">
+
+      <div class="card">
+        Gender
+        <div id="gender" class="value">-</div>
+      </div>
+
+      <div class="card">
+        Age Range
+        <div id="age" class="value">-</div>
+      </div>
+
+      <div class="card">
+        Status
+        <div id="status" class="status">Starting...</div>
+      </div>
+
+    </div>
+
   </div>
-
-  <div id="result">Starting...</div>
 
 </body>
 </html>
