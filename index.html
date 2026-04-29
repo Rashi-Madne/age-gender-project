@@ -1,21 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Age Gender Detection</title>
+  <title>AI Face Intelligence App</title>
 
-  <!-- Load face-api -->
   <script defer src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
-  <!-- Your script -->
   <script defer src="script.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: radial-gradient(circle at top, #1e293b, #0b1220);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h2 {
+      margin: 20px;
+      color: #38bdf8;
+    }
+
+    .card {
+      position: relative;
+      padding: 15px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 25px rgba(56,189,248,0.2);
+    }
+
+    .wrapper {
+      position: relative;
+    }
+
+    video {
+      width: 720px;
+      max-width: 90vw;
+      border-radius: 12px;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #result {
+      margin-top: 10px;
+      font-size: 18px;
+      color: #22c55e;
+    }
+
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #38bdf8;
+      color: black;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
-<body style="text-align:center; font-family:Arial;">
+<body>
 
-  <h2>Age & Gender Detection</h2>
+  <h2>🧠 AI Face Intelligence App</h2>
 
-  <video id="video" width="720" height="560" autoplay muted></video>
+  <div class="card">
 
-  <h3 id="result">Starting...</h3>
+    <div class="wrapper">
+      <video id="video" autoplay muted></video>
+    </div>
+
+    <div id="result">Starting...</div>
+
+    <div class="buttons">
+      <button onclick="takeSnapshot()">📸 Snapshot</button>
+    </div>
+
+  </div>
 
 </body>
 </html>
