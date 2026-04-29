@@ -6,11 +6,12 @@ const statusBox = document.getElementById("status");
 let canvas;
 let started = false;
 
-// ================= STABILITY STORAGE =================
+// ================= STABILITY BUFFERS =================
 let ageBuffer = [];
 let genderBuffer = [];
+
 let lastStableAge = null;
-let lastUpdateTime = 0;
+let noFaceCount = 0;
 
 // ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
@@ -40,7 +41,7 @@ async function loadModels() {
 
 loadModels();
 
-// ================= START =================
+// ================= START DETECTION =================
 function startDetection() {
 
   if (started) return;
@@ -56,7 +57,7 @@ function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  statusBox.innerText = "Tracking 🎯";
+  console.log("Detection started 🚀");
 
   setInterval(async () => {
 
@@ -69,53 +70,56 @@ function startDetection() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!resized.length) {
-      statusBox.innerText = "No face detected";
-      return;
-    }
+    // ================= FACE FOUND =================
+    if (resized.length > 0) {
 
-    const d = resized[0];
+      noFaceCount = 0;
 
-    // ================= AGE SMOOTHING =================
-    ageBuffer.push(d.age);
-    if (ageBuffer.length > 30) ageBuffer.shift();
+      const d = resized[0];
 
-    const avgAge =
-      ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
+      // -------- AGE SMOOTHING --------
+      ageBuffer.push(d.age);
+      if (ageBuffer.length > 30) ageBuffer.shift();
 
-    // ================= STABILITY LOCK =================
-    if (lastStableAge === null) {
-      lastStableAge = avgAge;
-    }
+      const avgAge =
+        ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
 
-    const diff = Math.abs(avgAge - lastStableAge);
+      if (lastStableAge === null) {
+        lastStableAge = avgAge;
+      }
 
-    if (diff > 1.5) {
-      lastStableAge = avgAge;
-    }
+      const diff = Math.abs(avgAge - lastStableAge);
 
-    // ================= FINAL AGE RANGE =================
-    const minAge = Math.max(0, Math.round(lastStableAge - 2));
-    const maxAge = Math.round(lastStableAge + 2);
+      if (diff > 1.5) {
+        lastStableAge = avgAge;
+      }
 
-    // ================= GENDER STABILITY =================
-    genderBuffer.push(d.gender);
-    if (genderBuffer.length > 12) genderBuffer.shift();
+      const minAge = Math.max(0, Math.round(lastStableAge - 2));
+      const maxAge = Math.round(lastStableAge + 2);
 
-    const stableGender = mode(genderBuffer);
+      // -------- GENDER STABILITY --------
+      genderBuffer.push(d.gender);
+      if (genderBuffer.length > 12) genderBuffer.shift();
 
-    // ================= UI THROTTLE =================
-    const now = Date.now();
+      const stableGender = mode(genderBuffer);
 
-    if (now - lastUpdateTime > 800) {
-
+      // -------- UI UPDATE --------
       genderBox.innerText = stableGender;
       ageBox.innerText = `${minAge} - ${maxAge}`;
 
-      lastUpdateTime = now;
+      statusBox.innerText = "Tracking 🎯";
+
+      faceapi.draw.drawDetections(canvas, resized);
+
+      return;
     }
 
-    faceapi.draw.drawDetections(canvas, resized);
+    // ================= NO FACE HANDLING =================
+    noFaceCount++;
+
+    if (noFaceCount > 5) {
+      statusBox.innerText = "No face detected ❌";
+    }
 
   }, 200);
 }
