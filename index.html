@@ -12,35 +12,70 @@
       font-family: Arial;
       background: #0a0f1c;
       color: white;
+      display: flex;
+    }
+
+    /* ================= SIDEBAR ================= */
+    .sidebar {
+      width: 220px;
+      background: #0f172a;
+      height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: bold;
+      color: #38bdf8;
+      margin-bottom: 30px;
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      color: #94a3b8;
+    }
+
+    .menu div {
+      cursor: pointer;
+    }
+
+    .menu div:hover {
+      color: white;
+    }
+
+    /* ================= MAIN AREA ================= */
+    .main {
+      flex: 1;
+      padding: 20px;
     }
 
     .header {
-      text-align: center;
-      padding: 16px;
       font-size: 22px;
+      margin-bottom: 20px;
       color: #38bdf8;
-      font-weight: bold;
     }
 
-    .container {
+    .dashboard {
       display: flex;
-      justify-content: center;
       gap: 20px;
-      padding: 20px;
       flex-wrap: wrap;
     }
 
-    .camera {
+    /* ================= CAMERA ================= */
+    .camera-box {
       position: relative;
       background: #111827;
       padding: 10px;
-      border-radius: 16px;
+      border-radius: 14px;
     }
 
     video {
-      width: 650px;
+      width: 600px;
       max-width: 90vw;
-      border-radius: 12px;
+      border-radius: 10px;
     }
 
     canvas {
@@ -49,24 +84,23 @@
       left: 10px;
     }
 
-    .panel {
-      width: 260px;
+    /* ================= CARDS ================= */
+    .card {
+      width: 220px;
       background: #111827;
-      padding: 20px;
-      border-radius: 16px;
+      padding: 15px;
+      border-radius: 12px;
     }
 
-    .card {
-      margin-bottom: 15px;
-      padding: 12px;
-      background: rgba(56,189,248,0.1);
-      border-radius: 10px;
+    .title {
+      font-size: 14px;
+      color: #94a3b8;
     }
 
     .value {
-      font-size: 20px;
+      font-size: 22px;
+      margin-top: 8px;
       color: #22c55e;
-      margin-top: 5px;
     }
 
     .status {
@@ -77,29 +111,44 @@
 
 <body>
 
-  <div class="header">🧠 AI Vision Dashboard</div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">🧠 AI DASHBOARD</div>
 
-  <div class="container">
-
-    <div class="camera">
-      <video id="video" autoplay muted></video>
+    <div class="menu">
+      <div>📷 Live Camera</div>
+      <div>📊 Analytics</div>
+      <div>⚙ Settings</div>
+      <div>📁 Reports</div>
     </div>
+  </div>
 
-    <div class="panel">
+  <!-- MAIN -->
+  <div class="main">
 
+    <div class="header">Real-time Face Intelligence</div>
+
+    <div class="dashboard">
+
+      <!-- CAMERA -->
+      <div class="camera-box">
+        <video id="video" autoplay muted></video>
+      </div>
+
+      <!-- CARDS -->
       <div class="card">
-        Gender
+        <div class="title">Gender</div>
         <div id="gender" class="value">-</div>
       </div>
 
       <div class="card">
-        Age Range
+        <div class="title">Age Range</div>
         <div id="age" class="value">-</div>
       </div>
 
       <div class="card">
-        Status
-        <div id="status" class="status">Starting...</div>
+        <div class="title">Status</div>
+        <div id="status" class="value status">Starting...</div>
       </div>
 
     </div>
