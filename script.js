@@ -3,26 +3,33 @@ const result = document.getElementById("result");
 
 let canvas;
 
-// CAMERA
+// ================= CAMERA =================
 navigator.mediaDevices.getUserMedia({ video: true })
-  .then(stream => video.srcObject = stream)
-  .catch(err => console.error(err));
+  .then(stream => {
+    video.srcObject = stream;
+    console.log("Camera started ✅");
+  })
+  .catch(err => console.error("Camera error:", err));
 
-// LOAD MODELS
+// ================= LOAD MODELS =================
 async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-  await faceapi.nets.ageGenderNet.loadFromUri('./models');
-  await faceapi.nets.faceExpressionNet.loadFromUri('./models');
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+    await faceapi.nets.ageGenderNet.loadFromUri('./models');
+    await faceapi.nets.faceExpressionNet.loadFromUri('./models');
 
-  console.log("All models loaded ✅");
+    console.log("Models loaded ✅");
+    startDetection();
 
-  start();
+  } catch (err) {
+    console.error("Model loading error ❌", err);
+  }
 }
 
 loadModels();
 
-// START DETECTION
-function start() {
+// ================= DETECTION =================
+function startDetection() {
 
   video.addEventListener("play", () => {
 
@@ -30,8 +37,8 @@ function start() {
     document.querySelector(".wrapper").appendChild(canvas);
 
     const displaySize = {
-      width: video.width,
-      height: video.height
+      width: video.videoWidth,
+      height: video.videoHeight
     };
 
     faceapi.matchDimensions(canvas, displaySize);
@@ -45,7 +52,8 @@ function start() {
 
       const resized = faceapi.resizeResults(detections, displaySize);
 
-      canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (!resized.length) {
         result.innerText = "No face detected ❌";
@@ -56,9 +64,9 @@ function start() {
 
       resized.forEach(d => {
 
-        const { age, gender, expressions, detection } = d;
+        const { age, gender, detection, expressions } = d;
 
-        const emotion = Object.keys(expressions).reduce((a,b)=>
+        const emotion = Object.keys(expressions).reduce((a, b) =>
           expressions[a] > expressions[b] ? a : b
         );
 
@@ -79,19 +87,17 @@ function start() {
   });
 }
 
-
-
-```js id="snap1"
+// ================= SNAPSHOT =================
 function takeSnapshot() {
-  const canvasSnap = document.createElement("canvas");
-  canvasSnap.width = video.videoWidth;
-  canvasSnap.height = video.videoHeight;
+  const snap = document.createElement("canvas");
+  snap.width = video.videoWidth;
+  snap.height = video.videoHeight;
 
-  const ctx = canvasSnap.getContext("2d");
+  const ctx = snap.getContext("2d");
   ctx.drawImage(video, 0, 0);
 
   const link = document.createElement("a");
   link.download = "ai-face.png";
-  link.href = canvasSnap.toDataURL();
+  link.href = snap.toDataURL("image/png");
   link.click();
 }
