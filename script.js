@@ -7,7 +7,7 @@ let canvas;
 let started = false;
 let running = true;
 
-// ================= STABILITY =================
+// ================= STATE =================
 let ageBuffer = [];
 let genderBuffer = [];
 let noFaceCount = 0;
@@ -32,6 +32,26 @@ async function loadModels() {
 }
 
 loadModels();
+
+// ================= VIEW SWITCH =================
+function showView(view) {
+
+  document.getElementById("liveView").classList.remove("active");
+  document.getElementById("analyticsView").classList.remove("active");
+  document.getElementById("settingsView").classList.remove("active");
+
+  if (view === "live") {
+    document.getElementById("liveView").classList.add("active");
+  }
+
+  if (view === "analytics") {
+    document.getElementById("analyticsView").classList.add("active");
+  }
+
+  if (view === "settings") {
+    document.getElementById("settingsView").classList.add("active");
+  }
+}
 
 // ================= TOGGLE =================
 function toggleDetection() {
@@ -88,7 +108,7 @@ function startDetection() {
 
     const d = resized[0];
 
-    // ================= AGE SMOOTH =================
+    // ================= AGE =================
     ageBuffer.push(d.age);
     if (ageBuffer.length > 25) ageBuffer.shift();
 
