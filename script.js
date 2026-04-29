@@ -3,101 +3,68 @@ const result = document.getElementById("result");
 
 let canvas;
 
-// ================= CAMERA =================
+// CAMERA
 navigator.mediaDevices.getUserMedia({ video: true })
   .then(stream => {
     video.srcObject = stream;
-    console.log("Camera started ✅");
   })
   .catch(err => console.error("Camera error:", err));
 
-// ================= LOAD MODELS =================
+// LOAD MODELS
 async function loadModels() {
-  try {
-    await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
-    await faceapi.nets.ageGenderNet.loadFromUri('./models');
-    await faceapi.nets.faceExpressionNet.loadFromUri('./models');
+  await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
+  await faceapi.nets.ageGenderNet.loadFromUri('./models');
+  await faceapi.nets.faceExpressionNet.loadFromUri('./models');
 
-    console.log("Models loaded ✅");
-    startDetection();
+  console.log("Models loaded ✅");
 
-  } catch (err) {
-    console.error("Model loading error ❌", err);
-  }
+  video.addEventListener("loadeddata", startDetection);
 }
 
 loadModels();
 
-// ================= DETECTION =================
+// DETECTION
 function startDetection() {
 
-  video.addEventListener("play", () => {
+  if (canvas) canvas.remove();
 
-    canvas = faceapi.createCanvasFromMedia(video);
-    document.querySelector(".wrapper").appendChild(canvas);
+  canvas = faceapi.createCanvasFromMedia(video);
+  document.querySelector(".wrapper").appendChild(canvas);
 
-    const displaySize = {
-      width: video.videoWidth,
-      height: video.videoHeight
-    };
+  const displaySize = {
+    width: video.videoWidth,
+    height: video.videoHeight
+  };
 
-    faceapi.matchDimensions(canvas, displaySize);
+  faceapi.matchDimensions(canvas, displaySize);
 
-    setInterval(async () => {
+  setInterval(async () => {
 
-      const detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-        .withAgeAndGender()
-        .withFaceExpressions();
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withAgeAndGender()
+      .withFaceExpressions();
 
-      const resized = faceapi.resizeResults(detections, displaySize);
+    const resized = faceapi.resizeResults(detections, displaySize);
 
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (!resized.length) {
-        result.innerText = "No face detected ❌";
-        return;
-      }
+    if (!resized.length) {
+      result.innerText = "No face detected ❌";
+      return;
+    }
 
-      faceapi.draw.drawDetections(canvas, resized);
+    faceapi.draw.drawDetections(canvas, resized);
 
-      resized.forEach(d => {
+    const d = resized[0];
 
-        const { age, gender, detection, expressions } = d;
+    const emotion = Object.keys(d.expressions).reduce((a, b) =>
+      d.expressions[a] > d.expressions[b] ? a : b
+    );
 
-        const emotion = Object.keys(expressions).reduce((a, b) =>
-          expressions[a] > expressions[b] ? a : b
-        );
+    result.innerText =
+      `Gender: ${d.gender} | Age: ${Math.round(d.age)} | ${emotion}`;
 
-        const label =
-          `${gender} | ${Math.round(age)} yrs | ${emotion}`;
-
-        new faceapi.draw.DrawTextField(
-          [label],
-          detection.box.bottomLeft
-        ).draw(canvas);
-      });
-
-      const d = resized[0];
-      result.innerText =
-        `Gender: ${d.gender} | Age: ${Math.round(d.age)}`;
-
-    }, 120);
-  });
-}
-
-// ================= SNAPSHOT =================
-function takeSnapshot() {
-  const snap = document.createElement("canvas");
-  snap.width = video.videoWidth;
-  snap.height = video.videoHeight;
-
-  const ctx = snap.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-
-  const link = document.createElement("a");
-  link.download = "ai-face.png";
-  link.href = snap.toDataURL("image/png");
-  link.click();
+  }, 200);
 }
