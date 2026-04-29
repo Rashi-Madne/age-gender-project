@@ -15,7 +15,7 @@
       display: flex;
     }
 
-    /* ================= SIDEBAR ================= */
+    /* SIDEBAR */
     .sidebar {
       width: 220px;
       background: #0f172a;
@@ -25,22 +25,22 @@
 
     .logo {
       font-size: 18px;
-      font-weight: bold;
       color: #38bdf8;
-      margin-bottom: 30px;
+      font-weight: bold;
+      margin-bottom: 25px;
     }
 
     .menu div {
-      margin: 12px 0;
-      color: #94a3b8;
+      padding: 10px;
       cursor: pointer;
+      color: #94a3b8;
     }
 
     .menu div:hover {
       color: white;
     }
 
-    /* ================= MAIN ================= */
+    /* MAIN */
     .main {
       flex: 1;
       padding: 20px;
@@ -48,35 +48,20 @@
 
     .header {
       font-size: 22px;
-      margin-bottom: 20px;
       color: #38bdf8;
+      margin-bottom: 20px;
     }
 
-    /* ================= CARDS ================= */
-    .card {
-      width: 240px;
-      background: #111827;
-      padding: 15px;
-      border-radius: 12px;
-      margin: 10px 0;
+    /* VIEW SYSTEM */
+    .view {
+      display: none;
     }
 
-    .title {
-      font-size: 13px;
-      color: #94a3b8;
+    .active {
+      display: block;
     }
 
-    .value {
-      font-size: 20px;
-      margin-top: 6px;
-      color: #22c55e;
-    }
-
-    .status {
-      color: #fbbf24;
-    }
-
-    /* ================= CAMERA ================= */
+    /* CAMERA */
     .camera-box {
       position: relative;
       background: #111827;
@@ -87,7 +72,6 @@
 
     video {
       width: 600px;
-      max-width: 90vw;
       border-radius: 10px;
     }
 
@@ -97,13 +81,34 @@
       left: 10px;
     }
 
-    /* ================= VIEWS ================= */
-    .view {
-      display: none;
+    /* CARDS */
+    .card {
+      background: #111827;
+      padding: 15px;
+      border-radius: 12px;
+      margin: 10px 0;
+      width: 250px;
     }
 
-    .active {
-      display: block;
+    .title {
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .value {
+      font-size: 20px;
+      color: #22c55e;
+      margin-top: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #38bdf8;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -134,8 +139,8 @@
       </div>
 
       <div class="card">
-        <div class="title">System Status</div>
-        <div id="status" class="value status">Starting...</div>
+        <div class="title">Status</div>
+        <div id="status" class="value">Starting...</div>
       </div>
 
       <div class="card">
@@ -150,7 +155,7 @@
 
       <div class="card">
         <button onclick="toggleDetection()" id="btn">
-          ⏯ Pause Detection
+          ⏯ Pause
         </button>
       </div>
 
@@ -159,20 +164,18 @@
     <!-- ANALYTICS -->
     <div id="analyticsView" class="view">
       <div class="card">
-        <div class="title">📊 Analytics Panel</div>
+        <div class="title">Analytics</div>
         <div class="value">Face Detection: Active</div>
-        <div class="value">Age Model: Running</div>
-        <div class="value">Gender Model: Running</div>
+        <div class="value">AI Model: Loaded</div>
       </div>
     </div>
 
     <!-- SETTINGS -->
     <div id="settingsView" class="view">
       <div class="card">
-        <div class="title">⚙ Settings</div>
-        <div class="value">Camera: Enabled</div>
-        <div class="value">AI Mode: Real-time</div>
-        <div class="value">Model: face-api.js</div>
+        <div class="title">Settings</div>
+        <div class="value">Camera: ON</div>
+        <div class="value">Mode: Real-time</div>
       </div>
     </div>
 
