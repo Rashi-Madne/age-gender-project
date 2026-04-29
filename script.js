@@ -4,54 +4,59 @@ const ageBox = document.getElementById("age");
 const statusBox = document.getElementById("status");
 
 let canvas;
-let modelsReady = false;
-let videoReady = false;
 let running = true;
+let started = false;
 
-// ================= STABILITY =================
+// STABILITY
 let ageBuffer = [];
 let genderBuffer = [];
 let noFaceCount = 0;
 let lastStableAge = null;
 
-// ================= INIT CAMERA =================
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+// ================= SIDEBAR FIX =================
+window.showView = function(view) {
+
+  document.getElementById("liveView").classList.remove("active");
+  document.getElementById("analyticsView").classList.remove("active");
+  document.getElementById("settingsView").classList.remove("active");
+
+  document.getElementById(view + "View").classList.add("active");
+};
+
+// ================= TOGGLE =================
+window.toggleDetection = function() {
+  running = !running;
+  document.getElementById("btn").innerText =
+    running ? "⏸ Pause" : "▶ Start";
+
+  statusBox.innerText = running ? "Running 🚀" : "Paused ⏸";
+};
+
+// ================= CAMERA =================
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
     video.srcObject = stream;
+  });
 
-    video.onloadedmetadata = () => {
-      videoReady = true;
-      statusBox.innerText = "Camera Ready 📷";
-
-      checkStart();
-    };
-
-  } catch (err) {
-    console.error("Camera error:", err);
-  }
-}
-
-// ================= LOAD MODELS =================
+// ================= MODELS =================
 async function loadModels() {
   await faceapi.nets.tinyFaceDetector.loadFromUri('./models');
   await faceapi.nets.ageGenderNet.loadFromUri('./models');
 
-  modelsReady = true;
-  statusBox.innerText = "AI Loaded ⚡";
+  statusBox.innerText = "AI Ready ⚡";
 
-  checkStart();
-}
-
-// ================= START ONLY WHEN BOTH READY =================
-function checkStart() {
-  if (modelsReady && videoReady) {
+  video.onloadedmetadata = () => {
     startDetection();
-  }
+  };
 }
 
-// ================= MAIN DETECTION LOOP =================
-async function startDetection() {
+loadModels();
+
+// ================= DETECTION =================
+function startDetection() {
+
+  if (started) return;
+  started = true;
 
   canvas = faceapi.createCanvasFromMedia(video);
   document.querySelector(".camera-box").appendChild(canvas);
@@ -63,78 +68,66 @@ async function startDetection() {
 
   faceapi.matchDimensions(canvas, displaySize);
 
-  statusBox.innerText = "Initializing AI 🎯";
+  loop();
 
-  detectLoop();
-}
+  async function loop() {
 
-// ================= CONTROLLED LOOP =================
-async function detectLoop() {
-
-  if (!running) {
-    requestAnimationFrame(detectLoop);
-    return;
-  }
-
-  const detections = await faceapi
-    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-    .withAgeAndGender();
-
-  const resized = faceapi.resizeResults(detections, {
-    width: video.videoWidth,
-    height: video.videoHeight
-  });
-
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // ================= NO FACE =================
-  if (!resized.length) {
-    noFaceCount++;
-
-    if (noFaceCount > 5) {
-      statusBox.innerText = "Searching face... 🔍";
+    if (!running) {
+      requestAnimationFrame(loop);
+      return;
     }
 
-    requestAnimationFrame(detectLoop);
-    return;
+    const detections = await faceapi
+      .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+      .withAgeAndGender();
+
+    const resized = faceapi.resizeResults(detections, displaySize);
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // NO FACE
+    if (!resized.length) {
+      noFaceCount++;
+      if (noFaceCount > 5) statusBox.innerText = "Searching 🔍";
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    noFaceCount = 0;
+
+    const d = resized[0];
+
+    // AGE STABILITY
+    ageBuffer.push(d.age);
+    if (ageBuffer.length > 20) ageBuffer.shift();
+
+    const avg = ageBuffer.reduce((a,b)=>a+b,0)/ageBuffer.length;
+
+    if (!lastStableAge) lastStableAge = avg;
+
+    if (Math.abs(avg - lastStableAge) > 1.5) {
+      lastStableAge = avg;
+    }
+
+    const min = Math.round(lastStableAge - 2);
+    const max = Math.round(lastStableAge + 2);
+
+    // GENDER STABILITY
+    genderBuffer.push(d.gender);
+    if (genderBuffer.length > 8) genderBuffer.shift();
+
+    const gender = mode(genderBuffer);
+
+    // UI
+    genderBox.innerText = gender;
+    ageBox.innerText = `${min} - ${max}`;
+    statusBox.innerText = "LIVE 🟢";
+
+    faceapi.draw.drawDetections(canvas, resized);
+
+    requestAnimationFrame(loop);
   }
-
-  noFaceCount = 0;
-
-  const d = resized[0];
-
-  // ================= AGE SMOOTH =================
-  ageBuffer.push(d.age);
-  if (ageBuffer.length > 20) ageBuffer.shift();
-
-  const avgAge =
-    ageBuffer.reduce((a, b) => a + b, 0) / ageBuffer.length;
-
-  if (!lastStableAge) lastStableAge = avgAge;
-
-  if (Math.abs(avgAge - lastStableAge) > 1.2) {
-    lastStableAge = avgAge;
-  }
-
-  const minAge = Math.round(lastStableAge - 2);
-  const maxAge = Math.round(lastStableAge + 2);
-
-  // ================= GENDER SMOOTH =================
-  genderBuffer.push(d.gender);
-  if (genderBuffer.length > 8) genderBuffer.shift();
-
-  const stableGender = mode(genderBuffer);
-
-  // ================= UI UPDATE =================
-  genderBox.innerText = stableGender;
-  ageBox.innerText = `${minAge} - ${maxAge}`;
-
-  statusBox.innerText = "LIVE 🟢 Tracking Face";
-
-  faceapi.draw.drawDetections(canvas, resized);
-
-  requestAnimationFrame(detectLoop);
 }
 
 // ================= MODE =================
@@ -144,7 +137,3 @@ function mode(arr) {
     arr.filter(v=>v===b).length
   ).pop();
 }
-
-// ================= START EVERYTHING =================
-startCamera();
-loadModels();
